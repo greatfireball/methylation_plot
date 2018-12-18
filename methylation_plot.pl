@@ -65,6 +65,28 @@ if (-e $output)
     $log->logdie("Output file exists, please specify a non existent file for output");
 }
 
+# open GFF and import genes
+my $annotation_data = {};
+my $num_genes = 0;
+
+open(FH, "<", $gff) || $log->logdie("Unable to open input GFF: $!");
+while (<FH>)
+{
+    next if (/^#/);
+
+    chomp;
+    my ($chr, undef, $type, $start, $stop, undef, $strand, undef) = split("\t", $_);
+
+    next unless ($type eq "gene");
+
+    push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop});
+    $num_genes++;
+}
+
+close(FH) || $log->logdie("Unable to close input GFF: $!");
+
+$log->info("Imported $num_genes genes for ".int(keys %{$annotation_data})." chromosomes");
+
 __END__
 
 =head1 methylation_plot.pl
