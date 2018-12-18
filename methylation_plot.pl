@@ -6,6 +6,8 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 
+use Bio::SeqIO;
+
 use Log::Log4perl;
 
 # Initialize Logger
@@ -25,7 +27,7 @@ my $man = 0;
 my $help = 0;
 my $version = 0;
 
-my ($gff, $methylfile, $output);
+my ($gff, $methylfile, $output, $fasta);
 
 my $region_len = 2000; # default value from Xiang et al. (2010)
 
@@ -37,6 +39,7 @@ GetOptions(
     'methfile=s'     => \$methylfile,
     'output=s'       => \$output,
     'regionlength=i' => \$region_len,
+    'fasta=s'        => \$fasta,
     ) or pod2usage(2);
 
 pod2usage(1) if $help;
@@ -68,6 +71,32 @@ if (-e $output)
     $log->logdie("Output file exists, please specify a non existent file for output");
 }
 
+unless (defined $fasta)
+{
+    $log->warn("No fasta file was defined via --fasta paramert. Therefore, border testing is only possible for upstream region!")
+}
+
+if (defined $fasta && ! -e $fasta)
+{
+    $log->logdie("The specified fasta file can not be accessed");
+}
+
+# Import sequence information
+my $contig_length = {};
+
+if ($fasta)
+{
+    my $seqio = Bio::SeqIO->new(-file => $fasta);
+    while (my $seq = $seqio->next_seq())
+    {
+	$log->logdie("Contig ".$seq->id()." already known!") if (exists $contig_length->{$seq->id()});
+
+	$contig_length->{$seq->id()} = $seq->length();
+    }
+
+    $log->info("Imported ".int(keys %{$contig_length})." contigs");
+}
+
 # open GFF and import genes
 my $annotation_data = {};
 my $num_genes = 0;
@@ -81,14 +110,24 @@ while (<FH>)
     chomp;
     my ($chr, undef, $type, $start, $stop, undef, $strand, undef) = split("\t", $_);
 
+    if (defined $fasta && ! exists $contig_length->{$chr})
+    {
+	$log->logdie("The chromosome $chr was not found in input fasta");
+    }
+
     next unless ($type eq "gene");
 
-    push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop});
-    $num_genes++;
-    if ($start-$region_len<=0)
+    # check if the up-/downstream region crosses the contig borders, if possible
+    my $valid_gene = 1;
+    if ($start-$region_len<=0 || (defined $fasta && $stop+$region_len>$contig_length->{$chr}))
     {
 	$num_genes_without_enough_distance++;
+	$valid_gene = 0;
     }
+
+    push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop, valid => $valid_gene});
+    $num_genes++;
+
 }
 
 close(FH) || $log->logdie("Unable to close input GFF: $!");
@@ -109,6 +148,7 @@ C<methylation_plot.pl> - Simple program to plot data according to Xiang et al. (
        --methfile        tab-seperated file with methylation information
        --output          name of the output file
        --regionlength    Length of up-/downstream region (default 2k)
+       --fasta           Sequence file to enable border checking for up-/downstream
        --help            brief help message
        --man             full documentation
        --version         prints the current program version
