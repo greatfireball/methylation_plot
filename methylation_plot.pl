@@ -25,10 +25,15 @@ my $man = 0;
 my $help = 0;
 my $version = 0;
 
+my ($gff, $methylfile, $output);
+
 GetOptions(
-    'help|?'  => \$help,
-    man       => \$man,
-    'version' => \$version
+    'help|?'     => \$help,
+    man          => \$man,
+    'version'    => \$version,
+    'gff=s'      => \$gff,
+    'methfile=s' => \$methylfile,
+    'output=s'   => \$output
     ) or pod2usage(2);
 
 pod2usage(1) if $help;
@@ -38,6 +43,26 @@ if ($version)
 {
     print $VERSION,"\n";
     exit;
+}
+
+unless (defined $gff && -e $gff)
+{
+    $log->logdie("Please specify a GFF3 file with gene annotations via --gff parameter");
+}
+
+unless (defined $methylfile && -e $methylfile)
+{
+    $log->logdie("Please specify a methylation file via --methfile parameter");
+}
+
+unless (defined $output)
+{
+    $log->logdie("Please specify an output file via --output parameter");
+}
+
+if (-e $output)
+{
+    $log->logdie("Output file exists, please specify a non existent file for output");
 }
 
 __END__
