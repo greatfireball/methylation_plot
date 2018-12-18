@@ -27,13 +27,16 @@ my $version = 0;
 
 my ($gff, $methylfile, $output);
 
+my $region_len = 2000; # default value from Xiang et al. (2010)
+
 GetOptions(
-    'help|?'     => \$help,
-    man          => \$man,
-    'version'    => \$version,
-    'gff=s'      => \$gff,
-    'methfile=s' => \$methylfile,
-    'output=s'   => \$output
+    'help|?'         => \$help,
+    man              => \$man,
+    'version'        => \$version,
+    'gff=s'          => \$gff,
+    'methfile=s'     => \$methylfile,
+    'output=s'       => \$output,
+    'regionlength=i' => \$region_len,
     ) or pod2usage(2);
 
 pod2usage(1) if $help;
@@ -68,6 +71,7 @@ if (-e $output)
 # open GFF and import genes
 my $annotation_data = {};
 my $num_genes = 0;
+my $num_genes_without_enough_distance = 0;
 
 open(FH, "<", $gff) || $log->logdie("Unable to open input GFF: $!");
 while (<FH>)
@@ -81,11 +85,15 @@ while (<FH>)
 
     push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop});
     $num_genes++;
+    if ($start-$region_len<=0)
+    {
+	$num_genes_without_enough_distance++;
+    }
 }
 
 close(FH) || $log->logdie("Unable to close input GFF: $!");
 
-$log->info("Imported $num_genes genes for ".int(keys %{$annotation_data})." chromosomes");
+$log->info("Imported $num_genes genes for ".int(keys %{$annotation_data})." contigs, but $num_genes_without_enough_distance genes have to short distance to contig border");
 
 __END__
 
@@ -100,6 +108,7 @@ C<methylation_plot.pl> - Simple program to plot data according to Xiang et al. (
        --gff             GFF3 with gene annotations
        --methfile        tab-seperated file with methylation information
        --output          name of the output file
+       --regionlength    Length of up-/downstream region (default 2k)
        --help            brief help message
        --man             full documentation
        --version         prints the current program version
@@ -121,6 +130,10 @@ Specify the file containing the information about methylated cysteins in the fol
 =item B<--output>
 
 Where should all the pdf output be stored.
+
+=item B<--regionlength>
+
+Specifies the length of up-/downstream region to check.
 
 =item B<--help>
 
