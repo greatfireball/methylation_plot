@@ -45,6 +45,7 @@ GetOptions(
     'methfile=s'     => \$methylfile,
     'output=s'       => \$output,
     'regionlength=i' => \$region_len,
+    'bins=i'         => \$num_bins_per_part,
     'fasta=s'        => \$fasta,
     ) or pod2usage(2);
 
@@ -266,6 +267,7 @@ C<methylation_plot.pl> - Simple program for data preparation for plots according
        --output          name of the output file
        --regionlength    Length of up-/downstream region (default 2k)
        --fasta           Sequence file to enable border checking for up-/downstream
+       --bins            Number of bins for up-/downstream and gene region (default 20)
        --help            brief help message
        --man             full documentation
        --version         prints the current program version
@@ -291,6 +293,10 @@ Where should the tab seperated output be stored.
 =item B<--regionlength>
 
 Specifies the length of up-/downstream region to check.
+
+=item B<--bins>
+
+Specifies the number of bins for up-/downstream and gene region. Default value us 20 according to Xiang et al. (2010).
 
 =item B<--help>
 
