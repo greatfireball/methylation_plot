@@ -152,6 +152,7 @@ $log->info("Imported $num_genes genes for ".int(keys %{$annotation_data})." cont
 my $methylation = {};
 my $skipped_missing_annotation = 0;
 my $skipped_missing_valid_gene = 0;
+my $skipped_intergenic         = 0;
 my $imported_methylation = 0;
 
 # prepare ProgressBar
@@ -206,6 +207,13 @@ while (<FH>)
 
     unless (@genes)
     {
+	$skipped_intergenic++;
+	next;
+    }
+
+    @genes = grep { $_->{valid} } (@genes);
+    unless (@genes)
+    {
 	$skipped_missing_valid_gene++;
 	next;
     }
@@ -218,7 +226,7 @@ while (<FH>)
 }
 close(FH) || $log->logdie("Unable to close input methylation file: $!");
 $progress->update($filesize) if $filesize >= $next_update;
-$log->info("Imported methylation status for $imported_methylation. Skipped $skipped_missing_annotation positions, due to missing annotation on contig. Skipped $skipped_missing_valid_gene positions, due to lack of valid genes. ");
+$log->info("Imported methylation status for $imported_methylation. Skipped $skipped_missing_annotation positions, due to missing annotation on contig. Skipped $skipped_intergenic positions, due to being intergenic. Skipped $skipped_missing_valid_gene positions, due to lack of valid genes. ");
 
 open(FH, '>', $output) || $log->logdie("Unable to open output file: $!");
 # print header line
