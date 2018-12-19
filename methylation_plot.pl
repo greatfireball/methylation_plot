@@ -31,10 +31,11 @@ my $version = 0;
 
 my ($gff, $methylfile, $output, $fasta);
 
-my $region_len = 2000; # default value from Xiang et al. (2010)
-my $num_bins_per_part = 20; # default value from Xiang et al. (2010)
+my $region_len        = 2000;    # default value from Xiang et al. (2010)
+my $num_bins_per_part = 20;      # default value from Xiang et al. (2010)
 
-my $bins = {};  # final output
+my $bins              = {};      # final output
+my @samples           = ();      # later used for sample naming and tracking of wrong input lines
 
 GetOptions(
     'help|?'         => \$help,
@@ -164,6 +165,18 @@ while (<FH>)
     chomp;
 
     my ($chr, $pos, $strand, @methylated) = split(/\s+/, $_);
+
+    # store the information about the number of samples if not already set
+    unless (@samples)
+    {
+	@samples = map { 'sample_'.$_ } (1..int(@methylated));
+    }
+
+    # check the number of samples and die if not correct
+    unless (@samples == @methylated)
+    {
+	$log->logdie(sprintf("Wrong number if samples data points in input line %d (expected %d, but found %d)", $., int(@samples), int(@methylated)));
+    }
 
     unless (exists $annotation_data->{$chr})
     {
