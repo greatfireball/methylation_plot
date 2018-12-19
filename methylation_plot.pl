@@ -139,7 +139,7 @@ while (<FH>)
 	$downstream = $contig_length->{$chr} if ($downstream>$contig_length->{$chr});
     }
 
-    push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop, valid => $valid_gene, upstream => $upstream, downstream => $downstream });
+    push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop, valid => $valid_gene, upstream => $upstream, downstream => $downstream, strand => $strand });
     $num_genes++;
 
 }
