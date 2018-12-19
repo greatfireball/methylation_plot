@@ -21,7 +21,7 @@ my $log_conf = q(
 Log::Log4perl::init(\$log_conf);
 my $log = Log::Log4perl->get_logger();
 
-use version 0.77; our $VERSION = version->declare("v0.1");
+use version 0.77; our $VERSION = version->declare("v0.8");
 
 use Term::ProgressBar;
 
