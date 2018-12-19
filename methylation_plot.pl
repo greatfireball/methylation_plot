@@ -275,6 +275,8 @@ sub update_bins
 	$bin = int(($pos-$gene->{start})/$bin_size_gene);
     }
 
+    $bin = $num_bins_per_part-1 if ($bin >= $num_bins_per_part);
+
     for(my $i=0; $i<@{$methylated}; $i++)
     {
 	$bins->{$part}[$bin]{methylated}[$i]+=$methylated->[$i];
