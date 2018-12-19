@@ -23,6 +23,8 @@ my $log = Log::Log4perl->get_logger();
 
 use version 0.77; our $VERSION = version->declare("v0.1");
 
+use Term::ProgressBar;
+
 my $man = 0;
 my $help = 0;
 my $version = 0;
@@ -146,9 +148,17 @@ my $methylation = {};
 my $skipped_missing_annotation = 0;
 my $skipped_missing_valid_gene = 0;
 my $imported_methylation = 0;
+
+# prepare ProgressBar
+my $filesize = -s $methylfile;
+my $progress = Term::ProgressBar->new({name => 'Methylation import', count => $filesize, remove => 1, ETA => 'linear'});
+$progress->minor(0);
+my $next_update = 0;
 open(FH, "<", $methylfile) || $log->logdie("Unable to open input methylation file: $!");
 while (<FH>)
 {
+    $next_update = $progress->update(tell(FH)) if tell(FH) >= $next_update;
+
     next if (/^#/);
 
     chomp;
@@ -190,6 +200,7 @@ while (<FH>)
     $imported_methylation++;
 }
 close(FH) || $log->logdie("Unable to close input methylation file: $!");
+$progress->update($filesize) if $filesize >= $next_update;
 $log->info("Imported methylation status for $imported_methylation. Skipped $skipped_missing_annotation positions, due to missing annotation on contig. Skipped $skipped_missing_valid_gene positions, due to lack of valid genes. ");
 
 sub update_bins
