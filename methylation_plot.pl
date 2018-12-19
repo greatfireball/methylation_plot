@@ -264,16 +264,26 @@ sub update_bins
     my $bin_size_upstream_downstream = $region_len / $num_bins_per_part;
     my $bin_size_gene = abs($gene->{start}-$gene->{stop}+1) / $num_bins_per_part;
 
-    # upstream?
+    # upstream on + strand?
     if ($pos < $gene->{start})
     {
-	$part = "upstream";
+	if ($gene->{strand} eq "-")
+	{
+	    $part = "downstream";
+	} else {
+	    $part = "upstream" ;
+	}
 	$bin  = int(($pos-$gene->{upstream})/$bin_size_upstream_downstream);
     }
-    # downstream ?
+    # downstream on + strand?
     elsif ($pos > $gene->{stop})
     {
-	$part = "downstream";
+	if ($gene->{strand} eq "-")
+	{
+	    $part = "upstream";
+	} else {
+	    $part = "downstream" ;
+	}
 	$bin  = int(($pos-$gene->{stop})/$bin_size_upstream_downstream);
     }
     # should be in gene
@@ -281,9 +291,17 @@ sub update_bins
     {
 	$part = "gene";
 	$bin = int(($pos-$gene->{start})/$bin_size_gene);
+
+	if ($gene->{strand} eq "-")
+	{
+	    $bin = $num_bins_per_part - $bin - 1;
+	}
     }
 
-    $bin = $num_bins_per_part-1 if ($bin >= $num_bins_per_part);
+    $log->logdie("Unexpected bin number") if ($bin > $num_bins_per_part || $bin < -1);
+
+    $bin = $num_bins_per_part-1 if ($bin == $num_bins_per_part);
+    $bin = 0 if ($bin == -1);
 
     for(my $i=0; $i<@{$methylated}; $i++)
     {
