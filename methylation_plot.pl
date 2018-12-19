@@ -119,13 +119,17 @@ while (<FH>)
 
     # check if the up-/downstream region crosses the contig borders, if possible
     my $valid_gene = 1;
-    if ($start-$region_len<=0 || (defined $fasta && $stop+$region_len>$contig_length->{$chr}))
+    my $upstream   = $start-$region_len;
+    my $downstream = $stop+$region_len;
+    if ($upstream<=0 || (defined $fasta && $downstream>$contig_length->{$chr}))
     {
 	$num_genes_without_enough_distance++;
 	$valid_gene = 0;
+	$upstream = 1 if ($upstream <= 0);
+	$downstream = $contig_length->{$chr} if ($downstream>$contig_length->{$chr});
     }
 
-    push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop, valid => $valid_gene});
+    push(@{$annotation_data->{$chr}{$strand}}, {start => $start, stop => $stop, valid => $valid_gene, upstream => $upstream, downstream => $downstream });
     $num_genes++;
 
 }
