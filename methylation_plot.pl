@@ -233,7 +233,7 @@ open(FH, '>', $output) || $log->logdie("Unable to open output file: $!");
 my @header = qw(part bin unique_part_bin_name);
 foreach (@samples)
 {
-    push(@header, ($_.'_rel', $_.'abs'));
+    push(@header, ($_.'_rel', $_.'_abs'));
 }
 print FH '#', join("\t", @header), "\n";
 
@@ -247,7 +247,7 @@ foreach my $part (qw(upstream gene downstream))
 
 	for(my $sample=0; $sample<@samples; $sample++)
 	{
-	    push(@dat, sprintf("%.6f", $bins->{$part}[$i]{methylated}[$sample]/$bins->{$part}[$i]{total}[$sample]), $bins->{$part}[$i]{methylated}[$sample]);
+	    push(@dat, sprintf("%.6f", $bins->{$part}[$i]{methylated}[$sample]/$bins->{$part}[$i]{total}[$sample]), $bins->{$part}[$i]{methylated_abs}[$sample]);
 	}
 
 	print FH join("\t", @dat), "\n";
@@ -303,9 +303,12 @@ sub update_bins
     $bin = $num_bins_per_part-1 if ($bin == $num_bins_per_part);
     $bin = 0 if ($bin == -1);
 
+    my $bin_size_for_abs_value = ($part eq "gene") ? $bin_size_gene : $bin_size_upstream_downstream;
+
     for(my $i=0; $i<@{$methylated}; $i++)
     {
 	$bins->{$part}[$bin]{methylated}[$i]+=$methylated->[$i];
+	$bins->{$part}[$bin]{methylated_abs}[$i]+=$methylated->[$i]/$bin_size_for_abs_value;
 	$bins->{$part}[$bin]{total}[$i]++;
     }
 }
