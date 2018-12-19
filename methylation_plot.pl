@@ -220,6 +220,33 @@ close(FH) || $log->logdie("Unable to close input methylation file: $!");
 $progress->update($filesize) if $filesize >= $next_update;
 $log->info("Imported methylation status for $imported_methylation. Skipped $skipped_missing_annotation positions, due to missing annotation on contig. Skipped $skipped_missing_valid_gene positions, due to lack of valid genes. ");
 
+open(FH, '>', $output) || $log->logdie("Unable to open output file: $!");
+# print header line
+my @header = qw(part bin unique_part_bin_name);
+foreach (@samples)
+{
+    push(@header, ($_.'_rel', $_.'abs'));
+}
+print FH '#', join("\t", @header), "\n";
+
+foreach my $part (qw(upstream gene downstream))
+{
+    for(my $i=0; $i<@{$bins->{$part}}; $i++)
+    {
+	my @dat = ();
+
+	push(@dat, ($part, $i, sprintf("'%s_%d'", $part,$i)));
+
+	for(my $sample=0; $sample<@samples; $sample++)
+	{
+	    push(@dat, sprintf("%.6f", $bins->{$part}[$i]{methylated}[$sample]/$bins->{$part}[$i]{total}[$sample]), $bins->{$part}[$i]{methylated}[$sample]);
+	}
+
+	print FH join("\t", @dat), "\n";
+    }
+}
+close(FH) || $log->logdie("Unable to close output file: $!");
+
 sub update_bins
 {
     my ($bins, $gene, $methylated, $region_len, $pos, $num_bins_per_part) = @_;
