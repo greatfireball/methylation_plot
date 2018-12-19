@@ -255,11 +255,11 @@ __END__
 
 =head1 methylation_plot.pl
 
-C<methylation_plot.pl> - Simple program to plot data according to Xiang et al. (2010)
+C<methylation_plot.pl> - Simple program for data preparation for plots according to Xiang et al. (2010)
 
 =head1 SYNOPSIS
 
-    methylation_plot.pl [options] --gff GFF-File --methyfile Methylation-File --output output.pdf
+    methylation_plot.pl [options] --gff GFF-File --methyfile Methylation-File --output output.csv
      Options:
        --gff             GFF3 with gene annotations
        --methfile        tab-seperated file with methylation information
@@ -286,7 +286,7 @@ Specify the file containing the information about methylated cysteins in the fol
 
 =item B<--output>
 
-Where should all the pdf output be stored.
+Where should the tab seperated output be stored.
 
 =item B<--regionlength>
 
