@@ -46,8 +46,11 @@ GetOptions(
     'output=s'       => \$output,
     'regionlength=i' => \$region_len,
     'bins=i'         => \$num_bins_per_part,
+    'sample=s@'      => \@samples,
     'fasta=s'        => \$fasta,
     ) or pod2usage(2);
+
+@samples = split(/,/, join(",", @samples));
 
 pod2usage(1) if $help;
 pod2usage(-exitval => 0, -verbose => 2) if $man;
@@ -261,13 +264,16 @@ C<methylation_plot.pl> - Simple program for data preparation for plots according
 =head1 SYNOPSIS
 
     methylation_plot.pl [options] --gff GFF-File --methyfile Methylation-File --output output.csv
-     Options:
+     Required:
        --gff             GFF3 with gene annotations
        --methfile        tab-seperated file with methylation information
        --output          name of the output file
+     Optional:
        --regionlength    Length of up-/downstream region (default 2k)
        --fasta           Sequence file to enable border checking for up-/downstream
        --bins            Number of bins for up-/downstream and gene region (default 20)
+       --sample          Define the name of samples in methylfile (use multiple times or comma seperated)
+
        --help            brief help message
        --man             full documentation
        --version         prints the current program version
@@ -297,6 +303,10 @@ Specifies the length of up-/downstream region to check.
 =item B<--bins>
 
 Specifies the number of bins for up-/downstream and gene region. Default value us 20 according to Xiang et al. (2010).
+
+=item B<--sample>
+
+Specifies name(s) for sample in methyl file. If not provided, the names are auto generated (sample_1, sample_2, ...). If specified, the number of samples must not differ from the number of sample names!
 
 =item B<--help>
 
