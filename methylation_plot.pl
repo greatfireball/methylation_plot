@@ -30,6 +30,9 @@ my $version = 0;
 my ($gff, $methylfile, $output, $fasta);
 
 my $region_len = 2000; # default value from Xiang et al. (2010)
+my $num_bins_per_part = 20; # default value from Xiang et al. (2010)
+
+my $bins = {};  # final output
 
 GetOptions(
     'help|?'         => \$help,
@@ -137,6 +140,92 @@ while (<FH>)
 close(FH) || $log->logdie("Unable to close input GFF: $!");
 
 $log->info("Imported $num_genes genes for ".int(keys %{$annotation_data})." contigs, but $num_genes_without_enough_distance genes have to short distance to contig border");
+
+# Import methylation information
+my $methylation = {};
+my $skipped_missing_annotation = 0;
+my $skipped_missing_valid_gene = 0;
+my $imported_methylation = 0;
+open(FH, "<", $methylfile) || $log->logdie("Unable to open input methylation file: $!");
+while (<FH>)
+{
+    next if (/^#/);
+
+    chomp;
+
+    my ($chr, $pos, $strand, @methylated) = split(/\s+/, $_);
+
+    unless (exists $annotation_data->{$chr})
+    {
+	$skipped_missing_annotation++;
+	next;
+    }
+
+    # get all genes for the position:
+    my @genes = ();
+    my @strands = ();
+    if ($strand eq ".")
+    {
+	@strands = keys %{$annotation_data->{$chr}};
+    } else {
+	@strands = ($strand);
+    }
+
+    foreach my $anno_strand (@strands)
+    {
+	my @subset = grep {$_->{valid} && $_->{upstream} <= $pos && $_->{downstream} >= $pos} (@{$annotation_data->{$chr}{$anno_strand}});
+	push(@genes, @subset);
+    }
+
+    unless (@genes)
+    {
+	$skipped_missing_valid_gene++;
+	next;
+    }
+
+    foreach my $gene (@genes)
+    {
+	update_bins($bins, $gene, \@methylated, $region_len, $pos, $num_bins_per_part);
+    }
+    $imported_methylation++;
+}
+close(FH) || $log->logdie("Unable to close input methylation file: $!");
+$log->info("Imported methylation status for $imported_methylation. Skipped $skipped_missing_annotation positions, due to missing annotation on contig. Skipped $skipped_missing_valid_gene positions, due to lack of valid genes. ");
+
+sub update_bins
+{
+    my ($bins, $gene, $methylated, $region_len, $pos, $num_bins_per_part) = @_;
+
+    my ($bin, $part);
+
+    my $bin_size_upstream_downstream = $region_len / $num_bins_per_part;
+    my $bin_size_gene = abs($gene->{start}-$gene->{stop}+1) / $num_bins_per_part;
+
+    # upstream?
+    if ($pos < $gene->{start})
+    {
+	$part = "upstream";
+	$bin  = int(($pos-$gene->{upstream})/$bin_size_upstream_downstream);
+    }
+    # downstream ?
+    elsif ($pos > $gene->{stop})
+    {
+	$part = "downstream";
+	$bin  = int(($pos-$gene->{stop})/$bin_size_upstream_downstream);
+    }
+    # should be in gene
+    else
+    {
+	$part = "gene";
+	$bin = int(($pos-$gene->{start})/$bin_size_gene);
+    }
+
+    for(my $i=0; $i<@{$methylated}; $i++)
+    {
+	$bins->{$part}[$bin]{methylated}[$i]+=$methylated->[$i];
+	$bins->{$part}[$bin]{total}[$i]++;
+    }
+}
 
 __END__
 
